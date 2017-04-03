@@ -1,10 +1,10 @@
 import paho.mqtt.client as mqtt
-import json, datetime, pymysql, os, iot_mysqldb
+import json, datetime, pymysql, os, mydb
 
 class Sensor_Table:
-    cur = iot_mysqldb.cur
+    cur = mydb.cur
+    db = mydb.db
 
-    # If the DB_table doex not exist, then create a table about sensor data
     def table_create(self, table_name):
         self.query = """
         CREATE TABLE IF NOT EXISTS %s(
@@ -14,25 +14,28 @@ class Sensor_Table:
         """ % table_name
         self.cur.execute(self.query)
 
-    # Check the DB_table existence.
     def table_check(self, table_name):
-        self.query = "SHOW TABLES LIKE '%s'" % table_name
-        return self.cur.execute(self.query)
+        self.cur.execute("SHOW TABLES")
+        result = self.cur.fetchall()
+        table_list = []
 
-    # Insert sensor value into the table
+        for row in result:
+            if 'iot_' in row[0] :
+                table_list.append(row[0])
+        return (table_name in table_list)
+
     def insert_data(self, table_name, value):
         self.cur.execute("INSERT INTO %s (sensor_data, pub_date) VALUES(%d, NOW())" %(table_name, value))
+        self.db.commit()
+        #print("save")
 
-    # Create a class about the DB_table into models.py
     def inspectdb(self):
-        # Get a list of the DB_tables related to the sensor
         table_list = []
         self.cur.execute("SHOW TABLES")
         result = self.cur.fetchall()
         for row in result:
             if 'iot_' in row[0] :
                 table_list.append(row[0])
-
         os.system("python manage.py inspectdb %s > iots/models.py" % " ".join(table_list))
         os.system("python manage.py migrate")
 
@@ -48,29 +51,24 @@ def on_message(client, userdata, msg):
     now = datetime.datetime.now().replace(microsecond = 0)
     msg.payload = msg.payload.decode("utf-8")
     dict = json.loads(msg.payload)
-    iot_topic = "iot_" + str(msg.topic).replace("/","_") + "_"
+    iot_topic = "iot_" + dict["place"].replace("/","_") + "_"
 
-    print("Topic: ", msg.topic + '\nMessage: ' + msg.payload)
-
-    for name in dict.keys():
+    print("Topic: " + msg.topic + '\nMessage: ' + msg.payload)
+    for name in dict["value"].keys():
         iot_name = iot_topic + name
-
-        # If the table about the topic does not exist
         if Iot_Sensor.table_check(iot_name) == False:
             check_table = False
             print("%s table does not exists" % iot_name)
-        Iot_Sensor.table_create(iot_name)
+            Iot_Sensor.table_create(iot_name)
 
-        # If new DB_table created, make a class into models.py
         if check_table == False:
             Iot_Sensor.inspectdb()
-
-        # Insert sensor value into the DB_table
-        Iot_Sensor.insert_data(iot_name, dict[name])
-        print(iot_name + " " + str(dict[name]) + " " + str(now))
+            print(check)
+        Iot_Sensor.insert_data(iot_name, dict["value"][name])
+        print(iot_name + " " + str(dict["value"][name]) + " " + str(now))
 
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect("your_mqtt_broker_ip", 1883, 60) #Add your Mqtt Broker ip
+client.connect("192.168.0.13", 1883, 60)
 client.loop_forever()

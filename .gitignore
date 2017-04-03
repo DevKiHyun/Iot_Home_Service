@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-Iot_Service/iot_mysqldb.py
-Iot_Service/settings.py
-=======
-*.iot_mysqldb.py
-*.settings.py
->>>>>>> a2021e119d2a0200fbee0c963da840456b73d82b
+iots/__pycache__
+auth/__pycache__
+Iot_Service/__pycache__

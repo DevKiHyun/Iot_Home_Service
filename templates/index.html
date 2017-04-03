@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<script src = "http://code.jquery.com/jquery-1.7.1.js"></script>
+<script src= "http://192.168.100.131:8080/socket.io/socket.io.js"></script>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>IOT_Service</title>
+    <script type = "text/javascript">
+      var socket = io('192.168.100.131:8080/');
+      socket.on("message", function(data){
+        console.log(data);
+        var value = data["value"]
+        var check_div = document.getElementById(data["place"])
+        if(!check_div)
+        {
+          console.log("Create New Div");
+
+          var div = document.createElement("div");
+          div.classList.add("card");
+          div.classList.add("sensor");
+          div.id = data["place"];
+
+          var title_div = document.createElement("div");
+          title_div.id = "sensor_title";
+
+          div.appendChild(title_div);
+          document.getElementById("sensor_card1").appendChild(div);
+          document.getElementById("sensor_title").innerHTML = data["place"];
+
+          for(var key in value)
+          {
+            console.log(key + " " + value[key]);
+            var id = "sensor" + "_" + key;
+            var data_div = document.createElement("div");
+            data_div.id = id;
+
+            div.appendChild(data_div);
+            document.getElementById("sensor" + "_" + key).innerHTML = key ;
+            document.getElementById("sensor" + "_" + key + "_value").innerHTML = value[key]
+          }
+        }
+
+        else
+        {
+          for(var key in value)
+          {
+            console.log(key + " " + value[key]);
+            document.getElementById("sensor" + "_" + key).innerHTML = key ;
+            document.getElementById("sensor" + "_" + key + "_value").innerHTML = value[key]
+          }
+        }
+        socket.emit("message","Rager");
+      });
+    </script>
+    <style >
+      h1 { margin-top: 0px; }
+      h2 { margin: auto; padding: 30px;}
+      body { background: #F5F5F5}
+      div { display: block;}
+      .header
+      {
+        background: #FFFFFF;
+        display: flex;
+        justify-content: center;
+        height : 90px;
+      }
+      .row
+      {
+        display: flex;
+        justify-content: center;
+        height: 90px;
+      }
+      .block
+      {
+        align-self: center;
+      }
+      .column
+      {
+        width: 25%;
+        float : left;
+      }
+      .column.paper4
+      {
+        float : right;
+      }
+      .card
+      {
+        background: #FFFFFF;
+        margin-left: 8px;
+        margin-bottom: 8px;
+      }
+      .board
+      {
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        height: 42px;
+      }
+      .name_board
+      {
+        width: 150px;
+        height: 40px;
+        float: left;
+      }
+      .value_board
+      {
+        margin-left: 16px;
+        width: 80px;
+        height: 42px;
+        float: right;
+      }
+      .sensor_name
+      {
+        margin-left: 56px;
+        margin-right: 0;
+        width:  94px;
+        height:  40px;
+      }
+      .sensor_value
+      {
+        margin-right: 0;
+        width: 80px;
+        height: 42px;
+        text-align: right;
+      }
+      #schedule { font-size : 20px;}
+      #sensor_title
+      {
+        font-size : 20px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 20px;
+        padding-bottom: 12px;
+      }
+      #title
+      {
+        font-size : 20px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 20px;
+        padding-bottom: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class = "header">
+      <div class= "block">IOT Service</div>
+    </div>
+
+    <div class = "row">
+      <div class = "block">
+        {% if user.is_authenticated %}
+           Hi {{ user.first_name }}
+           <a href="{%url "auth:logout"%}">logout</a>
+        {% endif %}
+        {% if not user.is_authenticated %}
+          <a href="{%url "social:begin" "google-oauth2" %}?next={{ request.path }}">Google+</a>
+        {% endif %}
+        Mail, Weather
+      </div>
+    </div>
+
+    <div class = "column paper1">
+      <div class = "card schedule">
+        <div id = title>Schedule</div>
+      </div>
+    </div>
+
+    {% if even %}
+      <div class = "column paper2" id = "sensor_card1">
+        {% for key, values in even.items %}
+        <div class="card sensor" id = {{ key }}>
+          <div id = sensor_title >{{ key }}</div>
+          {% for name, value in values.items %}
+          <div class = "board">
+            <div class ="name_board">
+              <div class= "sensor_name" id= "sensor_{{ name }}">
+                  {{ name }}
+              </div>
+            </div>
+            <div class ="value_board">
+              <div class= "sensor_value" id = "sensor_{{name}}_value">
+                  {{ value }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if odd %}
+      <div class = "column paper3" id = "sensor_card2">
+        {% for key, values in odd.items %}
+        <div class="card sensor" id = {{ key }} >
+          <div id = sensor_title >{{ key }}</div>
+          {% for name, value in values.items %}
+            <div id= "sensor_{{ name }}" >
+                  {{ name }} : {{ value }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class = "column paper4">
+      <div class = "card api">
+        <div id = title >api</div>
+      </div>
+    </div>
+  </body>
+</html>
