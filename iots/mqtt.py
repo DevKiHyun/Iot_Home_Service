@@ -20,7 +20,7 @@ class Sensor_Table:
         table_list = []
 
         for row in result:
-            if 'iot_' in row[0] :
+            if table_name in row[0] :
                 table_list.append(row[0])
         return (table_name in table_list)
 
