@@ -1,0 +1,299 @@
+  h1 { margin-top: 0px; }
+  h2 { margin: auto; padding: 30px;}
+  body { background: #F5F5F5}
+  div { display: block;}
+  .header
+  {
+    background: #FFFFFF;
+    display: flex;
+    justify-content: center;
+    height : 90px;
+  }
+  .profile
+  {
+    display: flex;
+    height: 90px;
+  }
+  .account
+  {
+    background-color: #4CAF50;
+    color: white;
+    width: 50px;
+    height: 25px;
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    border: none;
+  }
+  .cover_app
+  {
+    width: 55px;
+    height: 55px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    display: inline-block;
+    position: relative;
+  }
+  .app
+  {
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    width: 55px;
+    height: 55px;
+    border: none;
+  }
+  .block
+  {
+    align-self: center;
+  }
+  .column
+  {
+    width: 25%;
+    float : left;
+  }
+  .column.paper4
+  {
+    float : right;
+  }
+  .card
+  {
+    background: #FFFFFF;
+    margin-left: 8px;
+    margin-bottom: 8px;
+  }
+  .board
+  {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    height: 42px;
+  }
+  .name_board
+  {
+    width: 150px;
+    height: 40px;
+    float: left;
+  }
+  .value_board
+  {
+    margin-left: 16px;
+    width: 80px;
+    height: 42px;
+    float: right;
+  }
+  .sensor_name
+  {
+    margin-left: 56px;
+    margin-right: 0;
+    width:  94px;
+    height:  40px;
+  }
+  .sensor_value
+  {
+    margin-right: 0;
+    width: 80px;
+    height: 42px;
+    text-align: right;
+  }
+  .dropdown-content /*Hidden by Default*/
+  {
+    display: none;
+    min-width: 50px;
+    position: absolute;
+    z-index : 1;
+    background-color: #f9f9f9;
+  }
+  .dropdown-content a /*For Link */
+  {
+    color: black;
+    padding: 5px;
+    text-decoration: none;
+    display: block;
+  }
+  .dropdown-content a:hover
+  {
+    background-color: #f1f1f1
+  }
+  .modal /*background*/
+  {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    /*overflow: auto;*/
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal_content /*modal content*/
+  {
+    background-color: #fefefe;
+    margin: 15% auto;
+    border: 1px solid #888;
+    width: 40%;
+    height: 40%;
+  }
+
+  .mail_title_list
+  {
+    line-height: 30px;
+    height: 30px;
+    vertical-align: middle;
+  }
+  .mail_account_form_button
+  {
+    display: inline-block;
+    height: 36px;
+    padding: 0px;
+    line-height: 0px;
+    text-align: left;
+  }
+  .mail_table
+  {
+    display: block;
+    font-family: "Helvetica","Arial",sans-serif;
+    background-color: #fff;
+    box-shadow: 0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12);
+    border: 1px solid rgba(0,0,0,.12);
+    border-collapse: collapse;
+  }
+  .mail_main_cell
+  {
+    display: block;
+    height: 45px;
+    border-top: 1px solid rgba(0,0,0,.12);
+    border-collapse: collapse;
+    text-align: left;
+    line-height: 45px;
+    padding-left: 24px;
+    padding-right: 24px;
+    transition: 0.3s;
+    cursor: pointer;
+  }
+  .mail_main_cell:hover
+  {
+    background-color: #EEEEEE;
+  }
+  .mail_sub_cover
+  {
+    display: none;
+    width: 100%;
+  }
+  .mail_sub_cell
+  {
+    display: block;
+    border-top: 1px solid rgba(0,0,0,.12);
+    height: 25px;
+    text-align: left;
+    line-height: 25px;
+    padding-left: 24px;
+    padding-right: 24px;
+    transition: 0.3s;
+    cursor: pointer;
+  }
+  .mail_sub_cell:hover
+  {
+    background-color: #F5F5F5;
+  }
+  .submit_button
+  {
+    float: left;
+    bottom: 0px;
+  }
+  .close /*Close Button*/
+  {
+    float: right;
+    color: #aaa;
+    width: 28px;
+    height: 28px;
+    font-size: 28px;
+    font-weight: bold;
+    display: inline-block;
+    line-height: normal;
+  }
+  .close:hover,
+  .close:focus
+  {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .show /*dropdown content show*/
+  {
+    display: block;
+  }
+
+  #top_inner
+  {
+    text-align: center;
+    width: 100%;
+    height: 25px;
+    position: absolute;
+  }
+  #bottom_inner
+  {
+    text-align: center;
+    width: 100%;
+    height: 65px;
+    position: absolute;
+    margin-top: 25px;
+  }
+  #mail_top
+  {
+    width: 100%;
+    height: 65px;
+    text-align: center;
+  }
+  #mail_title
+  {
+    width: 25%;
+    height: 100%;
+    text-align: center;
+    display: inline-block;
+  }
+  #mail_title_button
+  {
+    float: left;
+  }
+  #mail_menu
+  {
+    width: 25%;
+    height: calc(100% - 65px);
+    float:left;
+    background-color: #F5F5F5;
+    box-shadow: 1px 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12);
+  }
+  #mail_body
+  {
+    width: 75%;
+    height: calc(100% - 65px);
+    float:right;
+  }
+  #mail_account_form
+  {
+    display: none;
+  }
+  #schedule
+  {
+    font-size : 20px;
+  }
+  #sensor_title
+  {
+    font-size : 20px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 20px;
+    padding-bottom: 12px;
+  }
+  #title
+  {
+    font-size : 20px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 20px;
+    padding-bottom: 12px;
+  }

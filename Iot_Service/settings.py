@@ -15,7 +15,7 @@ import json
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.abspath(os.path.dirname(__name__))
 
 #Env for dev / deploy
 def get_env(setting, envs):
@@ -49,7 +49,11 @@ else: #JSON env
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = GOOGLE_KEY
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = GOOGLE_SECRET
-SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email']
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email','https://www.googleapis.com/auth/calendar']
+SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
+    'access_type' : 'offline',
+    'prompt' : 'select_account+consent',
+}
 
 
 # Quick-start development settings - unsuitable for production
@@ -111,10 +115,11 @@ SOCIAL_AUTH_PIPELINE = [
     'social_core.pipeline.social_auth.social_uid',
     'social_core.pipeline.social_auth.auth_allowed',
     'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.create_user',
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
-    'auth.pipeline.get_user_avatar',
+    'auth.pipeline.user_setting',
 ]
 
 SOCIAL_AUTH_DISCONNECT_PIPELINE = [
@@ -183,3 +188,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static")
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
