@@ -19,29 +19,34 @@
       socket.emit("connected", master);
 
       socket.on(master, function(data){
-        for(var key in data["responses"])
-        {
-          var method = key;
-          var responses_data = data["responses"][key];
-        }
+        var method = data["method"];
+        var responses_data = data["data"];
         var success = data["success"];
-        console.log("Worker responses '%s'", method)
+
+        console.log("Worker responses %s", method);
         window[method](master, responses_data, success);
       });
 
       function dropdown(div){
-        document.getElementById(div).classList.toggle("show");
+        if(document.getElementById(div))
+        {
+          document.getElementById(div).classList.toggle("show");
+        }
+        else if(document.getElementsByClassName(div)[0])
+        {
+          document.getElementsByClassName(div)[0].classList.toggle("show")
+        }
       }
 
       window.onload = function()
       {
-        var modal = document.getElementById("mail_modal");
-        var button  = document.getElementById("mail_button");
+        var modal = document.getElementById("email_modal");
+        var button  = document.getElementById("email_button");
         var span = document.getElementsByClassName("close")[0];
         var add_account = document.getElementById("add_account");
-        var mail_account_form = document.getElementById("mail_account_form");
+        var email_account_form = document.getElementById("email_account_form");
         add_account.onclick = function(){
-          mail_account_form.style.display = "block";
+          email_account_form.style.display = "block";
         }
 
         button.onclick = function(){
@@ -50,14 +55,17 @@
 
         span.onclick = function(){
           modal.style.display = "none";
-          mail_account_form.style.display = "none";
+          email_account_form.style.display = "none";
         }
 
         window.onclick = function(event){
           if (event.target == modal)
           {
             modal.style.display = "none";
-            mail_account_form.style.display = "none";
+            email_account_form.style.display = "none";
+            $('#email_content').css('display', 'none');
+            $('.email_content_BODY').empty();
+            $('#email_main').css('display', 'block');
           }
           /*
           if(!event.target.matches('.account'))
@@ -99,17 +107,17 @@
       </div>
       <div id="bottom_inner">
         <div class="cover_app">
-          <button id="mail_button" class="app mdl-badge mdl-badge--overlap" data-badge ="1" >
+          <button id="email_button" class="app mdl-badge mdl-badge--overlap" data-badge ="1" >
             Mail
           </button>
-          <div id="mail_modal" class="modal">
-            <div class="modal_content">
-              <div id ="mail_top" class="mdl-layout__header" style="display: block; z-index: 2;">
+          <div id= "email_modal" class="modal">
+            <div id = "email_main" class="modal_content">
+              <div id ="email_top" class="mdl-layout__header" style="display: block; z-index: 2;">
                 <div>
-                  <button id="mail_title_button" class="mdl-button mdl-js-button mdl-button--icon">
+                  <button id="email_title_button" class="mdl-button mdl-js-button mdl-button--icon">
                     <i class="material-icons">more_vert</i></button>
-                    <ul class="mdl-menu mdl-js-menu" for="mail_title_button">
-                      <li id="add_account" class="mail_title_list mdl-menu__item">
+                    <ul class="mdl-menu mdl-js-menu" for="email_title_button">
+                      <li id="add_account" class="email_title_list mdl-menu__item">
                         Add account
                       </li>
                     </ul>
@@ -117,14 +125,14 @@
                 </div>
               </div>
 
-              <div id="mail_menu">
-                <div class="mail_table">
+              <div id="email_menu">
+                <div class="email_table">
                     {% if email %}
                       {% for key, value in email.items %}
-                        <div id={{key.0}} onclick= "mail_click('{{key.0}}.{{key.1}}')" class="mail_main_cell">{{key.0}}</div>
-                        <div id={{key.0}}.{{key.1}} class="mail_sub_cover">
+                        <div id={{key.0}} onclick= "click_host('{{key.0}}.{{key.1}}')" class="email_main_cell">{{key.0}}</div>
+                        <div id={{key.0}}.{{key.1}} class="email_sub_cover">
                           {% for id in value %}
-                            <div id={{id}} class="mail_sub_cell">
+                            <div onclick="click_email('{{id}}@{{key.0}}.{{key.1}}')" id={{id}} class="email_sub_cell">
                               {{id}}
                             </div>
                           {% endfor %}
@@ -134,25 +142,67 @@
                 </div>
               </div>
 
-              <div id="mail_body">
-                <div id="mail_account_form">
+              <div id="email_body">
+                <div class="email_box" >
+                  <div class="email_box_title">
+                    <div class="email_account">
+                    </div>
+                    <div class="email_folder">
+                    </div>
+                    <div class="email_mailbox_button">
+                      MailBox
+                    </div>
+                  </div>
+
+                  <div class="email_box_body">
+                  </div>
+
+                  <div class="email_box_page_num">
+                    <div class="page_prev_button">
+                    </div>
+                    <div class="page_num_index">
+                    </div>
+                    <div class="page_next_button">
+                    </div>
+                  </div>
+                </div>
+
+                <div id="email_account_form">
                   <div class="mdl-textfield mdl-js-textfield">
-                    <input class="mdl-textfield__input" type="text" id="user_mail" name="user_email">
-                    <label class="mdl-textfield__label" for="user_mail">Email address</label>
+                    <input class="mdl-textfield__input" type="text" id="user_email" name="user_email">
+                    <label class="mdl-textfield__label" for="user_email">Email address</label>
                   </div>
                   <div class="mdl-textfield mdl-js-textfield">
                     <input class="mdl-textfield__input" type="text" id="user_password" name="user_password">
                     <label class="mdl-textfield__label" for="user_password">User password</label>
                   </div>
-                  <div class="mail_account_form_button mdl-textfield ">
-                    <button onclick="email_check()"class="mdl-button mdl-js-button mdl-button--raised
+                  <div class="email_account_form_button mdl-textfield ">
+                    <button onclick="add_email()"class="mdl-button mdl-js-button mdl-button--raised
                     mdl-js-ripple-effect mdl-button--accent"
                     style="float: left; bottom:0px;">Submit
                     </button>
                   </div>
                 </div>
               </div>
+            </div>
 
+            <div id = "email_content" class="modal_content">
+              <div class="email_content_header">
+                <div class="email_content_SUBJECT">
+                </div>
+                <div class="email_content_DATE">
+                </div>
+              </div>
+
+              <div class="email_content_sub_header">
+                <div class="email_content_FROM">
+                </div>
+              </div>
+
+              <div class="email_content_main">
+                <div class="email_content_BODY">
+                </div>
+              </div>
             </div>
           </div>
         </div>

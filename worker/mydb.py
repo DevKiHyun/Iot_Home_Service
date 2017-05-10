@@ -2,13 +2,15 @@
 This module is for access user_mysqlDB.
 '''
 
-import pymysql, time
+import pymysql, time, json
 
 def get_db():
-    db = pymysql.connect(host = "", #Your host
-                   user = "",   #Your db user_name
-                   passwd = "", #your db user_password
-                   db = "")
+    db = pymysql.connect(
+        host = "",
+        user = "",
+        passwd = "",
+        db = "",
+        charset = "utf8")
 
     return db
 
@@ -59,7 +61,7 @@ def init():
     #if auth_user exist, but not exist app_table
 '''
 
-def create_app_email(current_user):
+def create_app_email(master):
     table_list = []
     db = get_db()
     cur = db.cursor()
@@ -71,55 +73,73 @@ def create_app_email(current_user):
 
     if "app_email" in table_list:
         user_id_list = []
-        cur.execute('''SELECT user_id FROM app_email
-        ''' )
+        cur.execute("SELECT master FROM app_email")
 
         result = cur.fetchall()
         for row in result:
             user_id_list.append(row[0])
 
-        if not current_user in user_id_list:
-            cur.execute("""INSERT INTO app_email (user_id, is_create)
-            VALUES('%s', %d)""" %(current_user, 0))
+        if not master in user_id_list:
+            query = "INSERT INTO app_email (master, is_create) VALUES(%s,%d)"
+            cur.execute(query %(master, 0))
             db.commit()
 
     else:
         query = """
         CREATE TABLE app_email(
-        user_id varchar(254),
+        master varchar(254),
         email_list longtext,
-        is_create tinyint(1) )
+        is_create tinyint(1))
         """
         cur.execute(query)
 
-        cur.execute("""INSERT INTO app_email (user_id, is_create)
-        VALUES('%s', %d)""" %(current_user, 0))
+        query = "INSERT INTO app_email (master, is_create) VALUES(%s,%d)"
+        cur.execute(query %(master, 0))
         db.commit()
 
-def get_email_dict(master):
+def create_app_email_folder():
+    table_list = []
     cur = get_db().cursor()
-    cur.execute('''SELECT email_list FROM app_email
-    WHERE user_id = '%s'
-    ''' %master)
+    cur.execute("SHOW TABLES")
 
-    email_dict = cur.fetchone()[0]
+    result = cur.fetchall()
+    for row in result:
+        table_list.append(row[0])
+
+    if not "app_email_folder" in table_list:
+        query = """
+        CREATE TABLE app_email_folder(
+        user_email varchar(254),
+        email_folder longtext)
+        """
+        cur.execute(query)
+
+def get_email_details(master):
+    cur = get_db().cursor()
+    query = "SELECT email_list FROM app_email WHERE master = %s"
+    cur.execute(query, master)
+
+    email_dict = eval(cur.fetchone()[0])
 
     return email_dict
 
 def view_email_dict(master):
-    email_dict = get_email_dict(master)
+    email_details = get_email_details(master)
 
-    if email_dict == None:
+    if email_details == None:
         return {}
 
     else:
-        email_list = list(eval(email_dict).keys())
-        temp = list()
-        email_dict = dict()
+        email_list = list(email_details.keys())
+        temp = []
+        email_dict = {}
 
         for email in email_list:
+            # email = my_example@gmail.com
             index = email.find("@")
+            #ex) host =  gmail.com
             host = email[index+1:]
+            #ex) email_id = my_example
             email_id = email[:index]
             temp.append((host,email_id))
 
@@ -128,76 +148,164 @@ def view_email_dict(master):
         # { (host_1, host_1.domain) : [mail_id_1, mail_id_2], (host_2, host_2.domain) : [mail_id_1, mail_id_2] }
         for (host,email_id) in temp:
             index = host.find('.')
+            #ex) domain = com
             domain = host[index+1:]
+            #ex) host_name = gmail
             host_name = host[:index]
 
             if not (host_name,domain) in email_dict:
-                email_dict[(host_name,domain)] = list()
+                email_dict[(host_name,domain)] = []
 
             email_dict[(host_name,domain)].append(email_id)
 
-
         return email_dict
 
-def email_exist(master, email):
-    #print("master is " + master)
-    #print("check email " + email)
+def email_exist(master, user_email):
     cur = get_db().cursor()
 
-    email_dict = get_email_dict(master)
+    email_dict = get_email_details(master)
 
     if not email_dict:
-        #print("email_dict is None")
         return False
 
     else:
-        #print("user's email_dict is " + email_list)
-        if email in email_dict:
+        if user_email in email_dict:
             return True
         else:
             return False
+
+def email_folder(user_email):
+    cur = get_db().cursor()
+
+    query = "SELECT email_folder FROM app_email_folder WHERE user_email = %s"
+    cur.execute(query, user_email)
+
+    result = cur.fetchone()[0]
+
+    email_folder = json.loads(result) if result else None
+
+    return email_folder
 
 def add_email(master, user_email, user_password):
     db = get_db()
     cur = db.cursor()
 
-    result = get_email_dict(master);
+    result = get_email_details(master);
 
-    email_dict = dict()
+    email_dict, details = ({} for i in range(2))
 
-    if result == None:
-        email_dict[user_email] = user_password
-
-    else :
+    if result :
         email_dict = eval(result)
-        email_dict[user_email] = user_password
 
-    cur.execute('''UPDATE app_email
-    SET email_list = "%s"
-    WHERE user_id = '%s'
-    ''' %(email_dict, master))
+    details["password"] = user_password
+    details["is_email_box"] = None
+    details["folder"] = None
+    details["oauth"] = False
+    email_dict[user_email] = details
 
+    query = "UPDATE app_email SET email_list = %s WHERE master = %s"
+    cur.execute(query, (str(email_dict), master))
+
+    query = "INSERT INTO app_email_folder (user_email) VALUES(%s)"
+    cur.execute(query, user_email)
     db.commit()
 
-def is_add_email(current_user):
+def add_email_folder(master, user_email, folder):
+    db = get_db()
+    cur = db.cursor()
+    query = "SELECT email_list FROM app_email WHERE master = %s"
+    cur.execute(query, master)
+    result = eval(cur.fetchone()[0])
+
+    email_details = result[user_email]
+    folder_list = email_details["folder"]
+    is_email_box = email_details["is_email_box"]
+
+    if not folder_list:
+        folder_list, is_email_box = ([] for i in range(2))
+
+    if not folder in folder_list:
+        folder_list.append(folder)
+        is_email_box.append(False)
+
+        result[user_email]["folder"] = folder_list
+        result[user_email]["is_email_box"] = is_email_box
+
+        query = "UPDATE app_email SET email_list = %s WHERE master = %s"
+        cur.execute(query, (str(result), master))
+
+        db.commit()
+
+def add_email_box(master, user_email, folder):
+    db = get_db()
+    cur = db.cursor()
+
+    added_folder_name = list(folder.keys())[0]
+
+    query  = "SELECT email_folder FROM app_email_folder WHERE user_email = %s"
+    cur.execute(query, user_email)
+
+    result = cur.fetchone()[0]
+    email_folder = json.loads(result) if result else {}
+
+    if not email_folder:
+        email_folder = folder
+
+    elif not added_folder_name in email_folder:
+        email_folder.update(folder)
+
+    query = "UPDATE app_email_folder SET email_folder = %s WHERE user_email = %s"
+    cur.execute(query, (json.dumps(email_folder), user_email))
+
+    # update is_email_box's state in app_email
+    query = "SELECT email_list FROM app_email WHERE master = %s"
+    cur.execute(query, master)
+    result = eval(cur.fetchone()[0])
+
+    email_details = result[user_email]
+    folder_list = email_details["folder"]
+    is_email_box = email_details["is_email_box"]
+
+    index = folder_list.index(added_folder_name)
+    is_email_box[index] = True
+
+    result[user_email]["is_email_box"] = is_email_box
+
+    query = "UPDATE app_email SET email_list = %s WHERE master = %s"
+    cur.execute(query, (str(result), master))
+    db.commit()
+
+def is_add_email(master):
     cur = get_db().cursor()
 
-    cur.execute('''SELECT is_create FROM app_email
-    WHERE user_id = '%s'
-    ''' %current_user)
+    query = "SELECT is_create FROM app_email WHERE master = %s"
+    cur.execute(query, master)
 
     result = cur.fetchone()[0]
 
     return result
 
+# check the folder's mailbox has been fetched
+def is_email_box(master, user_email, folder):
+    cur = get_db().cursor()
+
+    query = "SELECT email_list FROM app_email WHERE master = %s"
+    cur.execute(query, master)
+
+    result = cur.fetchone()[0]
+    folder_list = result["folder"]
+    is_email_box_list = result["is_email_box"]
+
+    index = folder_list.index(folder)
+
+    return is_email_box_list[index]
 
 #def create_app_calender():
 
-
 def view_sensor_dict():
     cur = get_db().cursor()
-    table_list, place_list, sensor_list = [], [], []
-    value, dict_odd, dict_even, dict_temp = dict(), dict(), dict(), dict()
+    table_list, place_list, sensor_list = ([] for i in range(3))
+    value, dict_odd, dict_even, dict_temp = ({} for i in range(4))
 
     cur.execute("SHOW TABLES")
     result = cur.fetchall()
@@ -209,11 +317,9 @@ def view_sensor_dict():
             sensor_list.append(temp[2])
 
     for i in range(0,len(table_list)):
-        query = """
-        SELECT sensor_data From %s
-        """ %table_list[i]
+        query = "SELECT sensor_data From %s"
 
-        cur.execute(query)
+        cur.execute(query, table_list[i])
         sensor_data = cur.fetchall()[-1][0]
 
         if i+1 < len(place_list) :
