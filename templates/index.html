@@ -8,6 +8,7 @@
     <title>IOT_Service</title>
     <script src="{% static "mqtt.js" %}"></script>
     <script src="{% static "email.js" %}"></script>
+    <script src="{% static "weather.js" %}"></script>
     <script type = "text/javascript">
       {% if master %}
         var master = "{{ master }}";
@@ -16,7 +17,11 @@
         var master = "unknown";
       {% endif %}
 
-      socket.emit("connected", master);
+      socket.emit("connected_master", master);
+
+      socket.on("disconnect", function(){
+        socket.emit("disconnected_master", master);
+      });
 
       socket.on(master, function(data){
         var method = data["method"];
@@ -107,7 +112,7 @@
       </div>
       <div id="bottom_inner">
         <div class="cover_app">
-          <button id="email_button" class="app mdl-badge mdl-badge--overlap" data-badge ="1" >
+          <button id="email_button" class="app mdl-badge mdl-badge--overlap">
             Mail
           </button>
           <div id= "email_modal" class="modal">
@@ -129,11 +134,15 @@
                 <div class="email_table">
                     {% if email %}
                       {% for key, value in email.items %}
-                        <div id={{key.0}} onclick= "click_host('{{key.0}}.{{key.1}}')" class="email_main_cell">{{key.0}}</div>
-                        <div id={{key.0}}.{{key.1}} class="email_sub_cover">
+                        <div id= {{key.0}} onclick= "click_host('{{key.0}}.{{key.1}}')" class="email_main_cell">{{key.0}}</div>
+                        <div id= {{key.0}}.{{key.1}} class="email_sub_cover">
                           {% for id in value %}
-                            <div onclick="click_email('{{id}}@{{key.0}}.{{key.1}}')" id={{id}} class="email_sub_cell">
-                              {{id}}
+                            <div id= "{{ id }}@{{ key.0 }}.{{ key.1 }}" onclick="click_email('{{ id }}@{{ key.0 }}.{{ key.1 }}')" class="email_sub_cell">
+                              <div id= "email_id" class="email_id">
+                                {{id}}
+                              </div>
+                              <div id= "email_unseen_num" class="email_unseen_num">
+                              </div>
                             </div>
                           {% endfor %}
                         </div>
@@ -215,62 +224,149 @@
       {% endif %}
     </div>
 
-    <div class = "column paper1">
-      <div class = "card schedule">
-        <div id = title>Schedule</div>
+    <div class= "mdl-grid">
+      <div class = "mdl-cell mdl-cell--3-col-desktop mdl-cell--4-col-phone">
+        <div class = "card schedule">
+          <div id = 'title'>Schedule</div>
+        </div>
       </div>
-    </div>
 
-    {% if even %}
-      <div class = "column paper2" id = "sensor_card1">
-        {% for key, values in even.items %}
-        <div class="card sensor" id = {{ key }}>
-          <div id = sensor_title >{{ key }}</div>
-          {% for name, value in values.items %}
-          <div class = "board">
-            <div class ="name_board">
-              <div class= "sensor_name" id= "sensor_{{ name }}">
-                  {{ name }}
+      {% if even %}
+        <div class = "mdl-cell mdl-cell--3-col-desktop mdl-cell--4-col-phone" id = "sensor_card1">
+          {% for key, values in even.items %}
+          <div class="card sensor" id = {{ key }}>
+            <div id = 'sensor_title' >{{ key }}</div>
+            {% for name, value in values.items %}
+            <div class = "board">
+              <div class ="name_board">
+                <div class= "sensor_name" id= "sensor_{{ name }}">
+                    {{ name }}
+                </div>
+              </div>
+              <div class ="value_board">
+                <div class= "sensor_value" id = "sensor_{{name}}_value">
+                    {{ value }}
+                </div>
               </div>
             </div>
-            <div class ="value_board">
-              <div class= "sensor_value" id = "sensor_{{name}}_value">
-                  {{ value }}
-              </div>
-            </div>
+            {% endfor %}
           </div>
           {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-    {% if odd %}
-      <div class = "column paper3" id = "sensor_card2">
-        {% for key, values in odd.items %}
-        <div class="card sensor" id = {{ key }}>
-          <div id = sensor_title >{{ key }}</div>
-          {% for name, value in values.items %}
-          <div class = "board">
-            <div class ="name_board">
-              <div class= "sensor_name" id= "sensor_{{ name }}">
-                  {{ name }}
+      {% endif %}
+
+      {% if odd %}
+        <div class = "mdl-cell mdl-cell--3-col-desktop mdl-cell--4-col-phone" id = "sensor_card2">
+          {% for key, values in odd.items %}
+          <div class="card sensor" id = {{ key }}>
+            <div id = 'sensor_title' >{{ key }}</div>
+            {% for name, value in values.items %}
+            <div class = "board">
+              <div class ="name_board">
+                <div class= "sensor_name" id= "sensor_{{ name }}">
+                    {{ name }}
+                </div>
+              </div>
+              <div class ="value_board">
+                <div class= "sensor_value" id = "sensor_{{name}}_value">
+                    {{ value }}
+                </div>
               </div>
             </div>
-            <div class ="value_board">
-              <div class= "sensor_value" id = "sensor_{{name}}_value">
-                  {{ value }}
-              </div>
-            </div>
+            {% endfor %}
           </div>
           {% endfor %}
         </div>
-        {% endfor %}
+      {% endif %}
+
+      <div class = "mdl-cell mdl-cell--3-col-desktop mdl-cell--4-col-phone" >
+        {% if weather.conditions %}
+            <div id = "weather" class = "card api">
+              <div id = 'title'>{{ weather.conditions.location }}</div>
+              <div id= "forecast_today" class= "board mdl-grid">
+                <div id = 'weather_summary' class= "mdl-cell mdl-cell--4-col-desktop mdl-cell--2-col-phone">
+                  <img id= 'weather_icon' src="{{  weather.conditions.icon_url }}"/>
+                  <div id= 'weather_conditions'>{{ weather.conditions.weather }}</div>
+                </div>
+                <div id = 'weather_temp' class= "mdl-cell mdl-cell--4-col-desktop mdl-cell--2-col-phone">
+                  <div id= 'weather_real'>{{ weather.conditions.temp_c }}</div>
+                  <div id = 'weather_feel'>Feels like {{ weather.conditions.feelslike_c }}°C</div>
+                </div>
+                <div id= "weather_wind" class= "mdl-cell mdl-cell--4-col-desktop mdl-cell--2-col-phone">
+                  <div id= "weather_wind_kph">
+                    {{ weather.conditions.wind_kph }}
+                  </div>
+                  <div id= "weather_wind_dir">
+                  kPh From {{ weather.conditions.wind_dir }}
+                  </div>
+                </div>
+              </div>
+              <table id = "weather_others" class= "board">
+                <tbody>
+                  <tr>
+                    <td style="text-align: center;">pressure</td>
+                    <td id= "pressure" style="text-align: center;">{{ weather.conditions.pressure_mb }} hPa</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center;">visibility</td>
+                    <td id= "visibility" style="text-align: center;">{{ weather.conditions.visibility_km }} km</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center;">dewpoint</td>
+                    <td id= "dewpoint" style="text-align: center;">{{ weather.conditions.dewpoint_c }} °C</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center;">humidity</td>
+                    <td id= "humidity" style="text-align: center;">{{ weather.conditions.relative_humidity }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div id= "forecast_6day" class="board mdl_grid">
+                <div id= "forecast_6day_1" class= "mdl-cell mdl-cell--12-col-desktop mdl-cell--4-col-phone">
+                  {% for day in weather.forecast_6day.0 %}
+                    <div id= "forecast_cell">
+                      <div id= "forecast_date">
+                        {{ day.date.weekday_short }} 0{{ day.date.month }}/{{ day.date.day }}
+                      </div>
+                      <div id= "forecast_temp">
+                        <span id="forecast_temp_high">{{ day.high.celsius }}°</span>
+                        <span style="display: inline-block; font-size: 12px; text-align: center; color: rgb(215, 215, 215);">|</span>
+                        <span id="forecast_temp_low">{{ day.low.celsius }}°</span>
+                      </div>
+                      <div id= "forecast_conditions">
+                        <img id= "forecast_icon_url" src="{{ day.icon_url }}"/>
+                        <div id= "forecast_conditions_details">{{ day.conditions }}</div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+                <div id= "forecast_6day_2" class= "mdl-cell mdl-cell--12-col-desktop mdl-cell--4-col-phone">
+                  {% for day in weather.forecast_6day.1 %}
+                    <div id= "forecast_cell">
+                      <div id= "forecast_date">
+                        {{ day.date.weekday_short }} 0{{ day.date.month }}/{{ day.date.day }}
+                      </div>
+                      <div id= "forecast_temp">
+                        <span id="forecast_temp_high">{{ day.high.celsius }}°</span>
+                        <span style="display: inline-block; font-size: 12px; text-align: center; color: rgb(215, 215, 215);">|</span>
+                        <span id="forecast_temp_low">{{ day.low.celsius }}°</span>
+                      </div>
+                      <div id= "forecast_conditions">
+                        <img id= "forecast_icon_url" src="{{ day.icon_url }}"/>
+                        <div id= "forecast_conditions_details">{{ day.conditions }}</div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+        {% else %}
+          <div class = "card api">
+            <div id = 'title'>Weather</div>
+          </div>
+        {% endif %}
       </div>
-    {% endif %}
-    <div class = "column paper4">
-      <div class = "card api">
-        <div id = title >api</div>
-      </div>
+
     </div>
   </body>
 </html>

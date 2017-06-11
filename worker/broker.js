@@ -2,7 +2,17 @@ var server = require('http').createServer().listen(8080);
 var io = require("socket.io").listen(server);
 
 io.sockets.on("connection", function(socket_client){
-    socket_client.on("connected", function(data){
+    socket_client.on("connected_master", function(data){
+      console.log(data + " connected");
+      io.emit("check_connected_master", data);
+    });
+
+    socket_client.on("disconnected_master", function(data){
+      console.log(data + " disconnected");
+      io.emit("check_disconnected_master", data);
+    })
+
+    socket_client.on("connected_worker", function(data){
       console.log(data + " connected");
     });
 

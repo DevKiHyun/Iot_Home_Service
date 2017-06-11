@@ -1,26 +1,12 @@
-import httplib2 ,datetime, os, json
+import httplib2, datetime, os, json, sys
+sys.path.append('/home/nkh/IOT_test/api')
+import credentials as Credentials
 from apiclient.discovery import build
-from oauth2client import client, GOOGLE_TOKEN_URI
 
-
-CLIENT_SECRET_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'client_secret.json')
-with open(CLIENT_SECRET_FILE) as json_data:
-    client_secret_json = json.load(json_data)['web']
-
-CLIENT_ID = client_secret_json["client_id"]
-CLIENT_SECRET = client_secret_json["client_secret"]
 APPLICATION_NAME = 'Google Calendar API Python'
 
-
 def get_event(refresh_token):
-    credentials = client.OAuth2Credentials(
-        access_token = None,
-        client_id = CLIENT_ID,
-        client_secret = CLIENT_SECRET,
-        refresh_token = refresh_token ,
-        token_expiry = None,
-        token_uri = GOOGLE_TOKEN_URI,
-        user_agent = None)
+    credentials = Credentials.get_credentials(refresh_token)
 
     http = credentials.authorize(httplib2.Http())
     service = build(serviceName ='calendar', version ='v3', http = http)
@@ -44,14 +30,7 @@ def get_event(refresh_token):
     return events
 
 def insert_event(refresh_token):
-    credentials = client.OAuth2Credentials(
-        access_token = None,
-        client_id = CLIENT_ID,
-        client_secret = CLIENT_SECRET,
-        refresh_token = refresh_token ,
-        token_expiry = None,
-        token_uri = GOOGLE_TOKEN_URI,
-        user_agent = None)
+    credentials = Credentials.get_credentials(refresh_token)
 
     http = credentials.authorize(httplib2.Http())
     service = build(serviceName ='calendar', version ='v3', http = http)

@@ -14,9 +14,7 @@ def get_db():
 
     return db
 
-
 class Sensor_Table:
-
     def __init__(self, database):
         self.db =  database
         self.cur = self.db.cursor()
@@ -53,13 +51,6 @@ class Sensor_Table:
                 table_list.append(row[0])
         os.system("python manage.py inspectdb %s > iots/models.py" % " ".join(table_list))
         os.system("python manage.py migrate")
-'''
-def init():
-    print("Database initiate")
-    cur = get_db().cursor()
-
-    #if auth_user exist, but not exist app_table
-'''
 
 def create_app_email(master):
     table_list = []
@@ -72,15 +63,15 @@ def create_app_email(master):
         table_list.append(row[0])
 
     if "app_email" in table_list:
-        user_id_list = []
+        master_list = []
         cur.execute("SELECT master FROM app_email")
 
         result = cur.fetchall()
         for row in result:
-            user_id_list.append(row[0])
+            master_list.append(row[0])
 
-        if not master in user_id_list:
-            query = "INSERT INTO app_email (master, is_create) VALUES(%s,%d)"
+        if not master in master_list:
+            query = "INSERT INTO app_email (master, is_create) VALUES('%s',%d)"
             cur.execute(query %(master, 0))
             db.commit()
 
@@ -94,7 +85,7 @@ def create_app_email(master):
         cur.execute(query)
 
         query = "INSERT INTO app_email (master, is_create) VALUES(%s,%d)"
-        cur.execute(query %(master, 0))
+        cur.execute(query,(master, 0))
         db.commit()
 
 def create_app_email_folder():
@@ -114,17 +105,22 @@ def create_app_email_folder():
         """
         cur.execute(query)
 
-def get_email_details(master):
+def get_email_dict(master):
     cur = get_db().cursor()
     query = "SELECT email_list FROM app_email WHERE master = %s"
     cur.execute(query, master)
 
-    email_dict = eval(cur.fetchone()[0])
+    result = cur.fetchone()[0]
 
+    if result:
+        email_dict = eval(result)
+
+    else:
+        email_dict = None
     return email_dict
 
 def view_email_dict(master):
-    email_details = get_email_details(master)
+    email_details = get_email_dict(master)
 
     if email_details == None:
         return {}
@@ -163,16 +159,14 @@ def view_email_dict(master):
 def email_exist(master, user_email):
     cur = get_db().cursor()
 
-    email_dict = get_email_details(master)
+    email_dict = get_email_dict(master)
 
     if not email_dict:
         return False
 
     else:
-        if user_email in email_dict:
-            return True
-        else:
-            return False
+        result = True if user_email in email_dict else False
+        return result
 
 def email_folder(user_email):
     cur = get_db().cursor()
@@ -181,26 +175,26 @@ def email_folder(user_email):
     cur.execute(query, user_email)
 
     result = cur.fetchone()[0]
-
     email_folder = json.loads(result) if result else None
 
     return email_folder
 
-def add_email(master, user_email, user_password):
+def add_email(master, user_email, user_password, is_idle):
     db = get_db()
     cur = db.cursor()
 
-    result = get_email_details(master);
+    result = get_email_dict(master);
 
     email_dict, details = ({} for i in range(2))
 
     if result :
-        email_dict = eval(result)
+        email_dict = result
 
     details["password"] = user_password
     details["is_email_box"] = None
     details["folder"] = None
     details["oauth"] = False
+    details["is_IDLE"] = is_idle
     email_dict[user_email] = details
 
     query = "UPDATE app_email SET email_list = %s WHERE master = %s"
@@ -236,11 +230,21 @@ def add_email_folder(master, user_email, folder):
 
         db.commit()
 
-def add_email_box(master, user_email, folder):
+def get_email_box(user_email, folder):
     db = get_db()
     cur = db.cursor()
 
-    added_folder_name = list(folder.keys())[0]
+    query  = "SELECT email_folder FROM app_email_folder WHERE user_email = %s"
+    cur.execute(query, user_email)
+
+    result = json.loads(cur.fetchone()[0])
+    email_folder = result[folder]
+
+    return (email_folder["mailbox"], email_folder["mailbox_list"])
+
+def add_email_box(master, user_email, folder, folder_name):
+    db = get_db()
+    cur = db.cursor()
 
     query  = "SELECT email_folder FROM app_email_folder WHERE user_email = %s"
     cur.execute(query, user_email)
@@ -251,7 +255,7 @@ def add_email_box(master, user_email, folder):
     if not email_folder:
         email_folder = folder
 
-    elif not added_folder_name in email_folder:
+    elif not folder_name in email_folder:
         email_folder.update(folder)
 
     query = "UPDATE app_email_folder SET email_folder = %s WHERE user_email = %s"
@@ -266,13 +270,31 @@ def add_email_box(master, user_email, folder):
     folder_list = email_details["folder"]
     is_email_box = email_details["is_email_box"]
 
-    index = folder_list.index(added_folder_name)
+    index = folder_list.index(folder_name)
     is_email_box[index] = True
 
     result[user_email]["is_email_box"] = is_email_box
 
     query = "UPDATE app_email SET email_list = %s WHERE master = %s"
     cur.execute(query, (str(result), master))
+    db.commit()
+
+def update_email_box(user_email, folder, folder_name):
+    db = get_db()
+    cur = db.cursor()
+
+    query  = "SELECT email_folder FROM app_email_folder WHERE user_email = %s"
+    cur.execute(query, user_email)
+
+    result = cur.fetchone()[0]
+    email_folder = json.loads(result) if result else {}
+
+    email_folder[folder_name]["mailbox"] = folder["mailbox"]
+    email_folder[folder_name]["mailbox_list"] = folder["mailbox_list"]
+    email_folder[folder_name]["unseen_num"] = folder["unseen_num"]
+
+    query = "UPDATE app_email_folder SET email_folder = %s WHERE user_email = %s"
+    cur.execute(query, (json.dumps(email_folder), user_email))
     db.commit()
 
 def is_add_email(master):
@@ -292,15 +314,40 @@ def is_email_box(master, user_email, folder):
     query = "SELECT email_list FROM app_email WHERE master = %s"
     cur.execute(query, master)
 
-    result = cur.fetchone()[0]
-    folder_list = result["folder"]
-    is_email_box_list = result["is_email_box"]
+    result = eval(cur.fetchone()[0])
+    folder_list = result[user_email]["folder"]
+    is_email_box_list = result[user_email]["is_email_box"]
 
-    index = folder_list.index(folder)
+    if folder_list:
+        if folder in folder_list:
+            index = folder_list.index(folder)
 
-    return is_email_box_list[index]
+            return is_email_box_list[index]
 
-#def create_app_calender():
+        else:
+            return False
+
+    else:
+        return False
+
+def change_email_flag(user_email = None, folder_name = None, index = None, email_id = None, state = None):
+    mailbox, mailbox_list, unseen_num = get_email_box(user_email, folder_name)
+
+    if state == "unseen":
+        state = "seen"
+        unseen_num = unseen_num - 1
+
+    if index:
+        mailbox[index]["state"] = state
+
+    elif email_id:
+        index = (mailbox.index(item) for item in mailbox if item["id"] == email_id)
+        mailbox[index]["state"] = state
+
+
+    folder = { "mailbox" : mailbox, "mailbox_list" : mailbox_list, "unseen_num" : unseen_num }
+
+    update_email_box(user_email, folder, folder_name)
 
 def view_sensor_dict():
     cur = get_db().cursor()

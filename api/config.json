@@ -1,0 +1,19 @@
+{
+    "web": {
+        "token_uri": "",
+        "redirect_uris": [
+            ""
+        ],
+        "project_id": "",
+        "auth_uri": "",
+        "client_id": "",
+        "client_secret": "",
+        "auth_provider_x509_cert_url": ""
+    },
+    "weather" : {
+        "api_key" : "",
+        "location" : "",
+        "language" : "",
+        "master" : [""]
+    }
+}
